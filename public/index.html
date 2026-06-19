@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>감상평 다이어리</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="mainView" class="screen">
+    <div class="main-center">
+      <h1 class="main-title">감상평<br>다이어리</h1>
+      <div class="main-menu">
+        <button type="button" class="menu-btn" id="btnWrite">
+          <span class="menu-btn-icon">✏️</span>
+          <span class="menu-btn-label">일기 쓰기</span>
+        </button>
+        <button type="button" class="menu-btn" id="btnRead">
+          <span class="menu-btn-icon">📖</span>
+          <span class="menu-btn-label">일기 읽기</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="dateView" class="screen hidden">
+    <div class="sub-header">
+      <button type="button" class="btn-icon" id="btnBackDate">←</button>
+      <span class="sub-title">날짜 선택</span>
+    </div>
+    <div class="date-list" id="datePickerList"></div>
+  </div>
+
+  <div id="writeView" class="screen hidden">
+    <div class="sub-header">
+      <button type="button" class="btn-icon" id="btnBackWrite">←</button>
+      <span class="sub-title" id="writeDateLabel"></span>
+    </div>
+    <form id="diaryForm" class="write-form">
+      <label class="field">
+        <span class="field-label">이름</span>
+        <input type="text" id="inputName" placeholder="이름" maxlength="20" required>
+      </label>
+      <label class="field">
+        <span class="field-label">소감</span>
+        <textarea id="inputContent" placeholder="오늘의 감상을 적어주세요" rows="8" maxlength="500" required></textarea>
+      </label>
+      <div class="field">
+        <span class="field-label">만족도</span>
+        <div class="emoji-row">
+          <button type="button" class="emoji-btn" data-emoji="😢">😢</button>
+          <button type="button" class="emoji-btn" data-emoji="😕">😕</button>
+          <button type="button" class="emoji-btn" data-emoji="😐">😐</button>
+          <button type="button" class="emoji-btn" data-emoji="🙂">🙂</button>
+          <button type="button" class="emoji-btn" data-emoji="😊">😊</button>
+          <button type="button" class="emoji-btn" data-emoji="🤩">🤩</button>
+        </div>
+        <input type="hidden" id="inputSatisfaction">
+      </div>
+      <button type="submit" class="btn-primary" id="btnSubmit">제출하기</button>
+    </form>
+  </div>
+
+  <div id="readView" class="screen hidden">
+    <div class="sub-header">
+      <button type="button" class="btn-icon" id="btnBackRead">←</button>
+      <span class="sub-title">일기 읽기</span>
+    </div>
+    <section class="book-area">
+      <div class="book-wrapper">
+        <div class="book" id="book">
+          <div class="book-shadow"></div>
+          <div class="book-spine"></div>
+          <div class="book-viewport" id="bookViewport">
+            <div class="book-track" id="bookTrack"></div>
+          </div>
+        </div>
+      </div>
+      <div class="book-controls">
+        <button type="button" class="book-nav" id="btnBookPrev">‹</button>
+        <span class="book-page-num" id="bookPageNum">1 / 1</span>
+        <button type="button" class="book-nav" id="btnBookNext">›</button>
+      </div>
+      <p class="book-hint">좌우로 넘겨 일기를 읽어보세요</p>
+    </section>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>

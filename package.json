@@ -1,0 +1,14 @@
+{
+  "name": "감상평-다이어리",
+  "version": "1.0.0",
+  "description": "감성 일기 작성 플랫폼",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5"
+  }
+}
