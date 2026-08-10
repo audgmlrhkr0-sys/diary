@@ -441,19 +441,36 @@ body {
 .field input:focus,
 .field textarea:focus { border-bottom-color: var(--accent); }
 
-.emoji-row { display: flex; gap: 0.35rem; }
+.emoji-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+}
 
 .emoji-btn {
-  flex: 1;
-  font-size: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 100%;
+  font-size: 1.45rem;
   background: var(--ivory);
   border: 2px solid transparent;
   border-radius: 10px;
-  padding: 0.5rem 0;
+  padding: 0.55rem 0.25rem 0.45rem;
   cursor: pointer;
+  font-family: inherit;
 }
 
 .emoji-btn.selected { border-color: var(--accent); background: var(--ivory-dark); }
+.emoji-icon { line-height: 1; }
+.emoji-caption {
+  font-size: 0.62rem;
+  color: var(--text-sub);
+  font-weight: 400;
+  white-space: nowrap;
+}
 
 .btn-primary {
   margin-top: 0.5rem;

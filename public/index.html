@@ -91,21 +91,39 @@
     <form id="diaryForm" class="write-form">
       <label class="field">
         <span class="field-label">이름</span>
-        <input type="text" id="inputName" placeholder="이름" maxlength="20" required>
+        <input type="text" id="inputName" placeholder="예) 홍길동" maxlength="20" required>
       </label>
       <label class="field">
-        <span class="field-label">소감</span>
-        <textarea id="inputContent" placeholder="오늘의 감상을 적어주세요" rows="8" maxlength="500" required></textarea>
+        <span class="field-label">참여 소감</span>
+        <textarea id="inputContent" placeholder="오늘의 참여 소감을 적어주세요" rows="8" maxlength="500" required></textarea>
       </label>
       <div class="field">
-        <span class="field-label">만족도</span>
+        <span class="field-label">나의 표정</span>
         <div class="emoji-row">
-          <button type="button" class="emoji-btn" data-emoji="😢">😢</button>
-          <button type="button" class="emoji-btn" data-emoji="😕">😕</button>
-          <button type="button" class="emoji-btn" data-emoji="😐">😐</button>
-          <button type="button" class="emoji-btn" data-emoji="🙂">🙂</button>
-          <button type="button" class="emoji-btn" data-emoji="😊">😊</button>
-          <button type="button" class="emoji-btn" data-emoji="🤩">🤩</button>
+          <button type="button" class="emoji-btn" data-emoji="😢">
+            <span class="emoji-icon">😢</span>
+            <span class="emoji-caption">눈물</span>
+          </button>
+          <button type="button" class="emoji-btn" data-emoji="😐">
+            <span class="emoji-icon">😐</span>
+            <span class="emoji-caption">무표정</span>
+          </button>
+          <button type="button" class="emoji-btn" data-emoji="🙂">
+            <span class="emoji-icon">🙂</span>
+            <span class="emoji-caption">웃음</span>
+          </button>
+          <button type="button" class="emoji-btn" data-emoji="😄">
+            <span class="emoji-icon">😄</span>
+            <span class="emoji-caption">활짝웃음</span>
+          </button>
+          <button type="button" class="emoji-btn" data-emoji="🤩">
+            <span class="emoji-icon">🤩</span>
+            <span class="emoji-caption">신나는</span>
+          </button>
+          <button type="button" class="emoji-btn" data-emoji="🔥">
+            <span class="emoji-icon">🔥</span>
+            <span class="emoji-caption">불</span>
+          </button>
         </div>
         <input type="hidden" id="inputSatisfaction">
       </div>
