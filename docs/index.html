@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>감상평 다이어리</title>
+  <title>전시연계프로그램 &lt;ON AIR: 규칙을 찾아라!&gt; 감상평 다이어리</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
   <!-- 메인 -->
   <div id="mainView" class="screen">
     <div class="main-center">
-      <h1 class="main-title">감상평<br>다이어리</h1>
+      <h1 class="main-title">전시연계프로그램<br>&lt;ON AIR: 규칙을 찾아라!&gt;<br>감상평 다이어리</h1>
       <div class="main-menu">
         <button type="button" class="menu-btn" id="btnWrite">
           <span class="menu-btn-icon">✏️</span>
@@ -83,11 +83,20 @@
     </form>
   </div>
 
+  <!-- 책 선택 (일기 읽기) -->
+  <div id="bookSelectView" class="screen hidden">
+    <div class="sub-header">
+      <button type="button" class="btn-icon" id="btnBackBookSelect">←</button>
+      <span class="sub-title">책 고르기</span>
+    </div>
+    <div class="book-shelf" id="bookShelf"></div>
+  </div>
+
   <!-- 일기 읽기 -->
   <div id="readView" class="screen hidden">
     <div class="sub-header">
       <button type="button" class="btn-icon" id="btnBackRead">←</button>
-      <span class="sub-title">일기 읽기</span>
+      <span class="sub-title" id="readTitle">일기 읽기</span>
     </div>
     <section class="book-area">
       <div class="book-wrapper">

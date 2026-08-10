@@ -28,3 +28,10 @@ create policy "Anyone can insert diary entries"
   for insert
   to anon, authenticated
   with check (true);
+
+drop policy if exists "Anyone can delete diary entries" on diary_entries;
+create policy "Anyone can delete diary entries"
+  on diary_entries
+  for delete
+  to anon, authenticated
+  using (true);

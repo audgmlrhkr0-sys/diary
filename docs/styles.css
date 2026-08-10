@@ -50,12 +50,12 @@ body {
 }
 
 .main-title {
-  font-size: clamp(2.4rem, 10vw, 3.2rem);
+  font-size: clamp(1.35rem, 5.5vw, 1.85rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   text-align: center;
-  line-height: 1.25;
-  margin-bottom: 3.5rem;
+  line-height: 1.45;
+  margin-bottom: 3rem;
 }
 
 .main-menu {
@@ -144,6 +144,86 @@ body {
   color: var(--text-sub);
 }
 .date-pick-day { font-size: 0.8rem; color: var(--text-sub); flex-shrink: 0; }
+
+/* 책장 */
+.book-shelf {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.shelf-loading {
+  text-align: center;
+  color: var(--text-sub);
+  padding: 2rem 0;
+}
+
+.shelf-book {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: 88px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  font-family: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  text-align: left;
+}
+
+.shelf-book:active { background: var(--ivory-dark); }
+
+.shelf-book-spine {
+  width: 14px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #a89880, #7a6e5c 40%, #a89880);
+}
+
+.shelf-book-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+}
+
+.shelf-book-label {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.shelf-book-note {
+  font-size: 0.78rem;
+  color: var(--text-sub);
+}
+
+.shelf-book-count {
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  margin-top: 0.2rem;
+}
+
+.btn-delete {
+  margin-top: 1.5rem;
+  align-self: flex-start;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #d0c8bc;
+  border-radius: 8px;
+  background: transparent;
+  color: #8a6a5a;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn-delete:active { background: var(--ivory-dark); }
 
 /* 비밀번호 */
 .password-form {
@@ -287,6 +367,8 @@ body {
   padding: 2rem 1.75rem;
   overflow-y: auto;
   background: var(--paper);
+  display: flex;
+  flex-direction: column;
 }
 
 .page-cover {
@@ -298,8 +380,21 @@ body {
   text-align: center;
 }
 
-.page-cover-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
-.page-cover-sub { font-size: 0.8rem; color: var(--text-sub); }
+.page-cover-eyebrow {
+  font-size: 0.72rem;
+  color: var(--text-sub);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.4rem;
+}
+.page-cover-program {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 0.55rem;
+  text-align: center;
+}
+.page-cover-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.85rem; }
+.page-cover-sub { font-size: 0.8rem; color: var(--text-sub); margin-top: 0.25rem; }
 .page-date-tag { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 1.25rem; }
 .page-author { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
 .page-emoji { font-size: 1.6rem; margin-bottom: 1rem; }

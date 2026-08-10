@@ -16,11 +16,14 @@ const screens = {
   password: document.getElementById('passwordView'),
   date: document.getElementById('dateView'),
   write: document.getElementById('writeView'),
+  bookSelect: document.getElementById('bookSelectView'),
   read: document.getElementById('readView'),
 };
 
 let db = null;
 let currentDate = null;
+let readDate = null;
+let currentPages = [];
 let currentPage = 0;
 let totalPages = 0;
 let touchStartX = 0;
@@ -74,6 +77,18 @@ function dateMeta(dateStr) {
   return DIARY_DATES.find((d) => d.date === dateStr) || { date: dateStr, label: dateStr, day: '' };
 }
 
+function ensureWriteAuth() {
+  if (sessionStorage.getItem(WRITE_AUTH_KEY) === '1') return true;
+  const value = window.prompt('삭제를 위해 비밀번호를 입력해 주세요');
+  if (value === null) return false;
+  if (value.trim() !== WRITE_PASSWORD) {
+    showToast('비밀번호가 틀렸습니다');
+    return false;
+  }
+  sessionStorage.setItem(WRITE_AUTH_KEY, '1');
+  return true;
+}
+
 async function saveEntry(data) {
   if (!db) throw new Error('Supabase가 설정되지 않았습니다');
 
@@ -92,33 +107,56 @@ async function saveEntry(data) {
   return row;
 }
 
-async function getAllEntries() {
+async function getEntriesByDate(date) {
   if (!db) return [];
 
   const { data, error } = await db
     .from('diary_entries')
     .select('id, date, name, content, satisfaction, created_at')
-    .order('date', { ascending: true })
+    .eq('date', date)
     .order('created_at', { ascending: true });
 
   if (error) throw error;
 
-  const allowed = new Set(DIARY_DATES.map((d) => d.date));
-  return (data || [])
-    .filter((e) => allowed.has(e.date))
-    .map((e) => {
-      const meta = dateMeta(e.date);
-      return {
-        id: e.id,
-        name: e.name,
-        content: e.content,
-        satisfaction: e.satisfaction,
-        createdAt: e.created_at,
-        date: e.date,
-        dateLabel: meta.note ? `${meta.label} (${meta.note})` : meta.label,
-        day: meta.day,
-      };
-    });
+  const meta = dateMeta(date);
+  return (data || []).map((e) => ({
+    id: e.id,
+    name: e.name,
+    content: e.content,
+    satisfaction: e.satisfaction,
+    createdAt: e.created_at,
+    date: e.date,
+    dateLabel: meta.note ? `${meta.label} (${meta.note})` : meta.label,
+    day: meta.day,
+    note: meta.note || '',
+  }));
+}
+
+async function getEntryCounts() {
+  if (!db) return {};
+
+  const { data, error } = await db
+    .from('diary_entries')
+    .select('date');
+
+  if (error) throw error;
+
+  const counts = {};
+  (data || []).forEach((row) => {
+    counts[row.date] = (counts[row.date] || 0) + 1;
+  });
+  return counts;
+}
+
+async function deleteEntry(id) {
+  if (!db) throw new Error('Supabase가 설정되지 않았습니다');
+
+  const { error } = await db
+    .from('diary_entries')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
 function openWriteGate() {
@@ -169,14 +207,17 @@ function openWrite(date, info) {
 function buildPageContent(entry) {
   if (entry.type === 'cover') {
     return `<div class="page-cover">
+      <p class="page-cover-eyebrow">전시연계프로그램</p>
+      <p class="page-cover-program">&lt;ON AIR: 규칙을 찾아라!&gt;</p>
       <p class="page-cover-title">감상평 다이어리</p>
+      ${entry.subtitle ? `<p class="page-cover-sub">${escapeHtml(entry.subtitle)}</p>` : ''}
       <p class="page-cover-sub">좌우로 넘겨 읽어보세요</p>
     </div>`;
   }
   if (entry.type === 'empty') {
     return `<div class="page-empty">
       <div class="page-empty-icon">📖</div>
-      <p>아직 작성된 일기가 없어요<br>일기 쓰기에서 첫 일기를 남겨보세요</p>
+      <p>아직 작성된 일기가 없어요<br>일기 쓰기에서 남겨보세요</p>
     </div>`;
   }
   if (entry.type === 'error') {
@@ -185,26 +226,59 @@ function buildPageContent(entry) {
       <p>일기를 불러오지 못했어요<br>잠시 후 다시 시도해 주세요</p>
     </div>`;
   }
-  return `<div class="page-date-tag">${entry.dateLabel} · ${entry.day}요일</div>
+  return `<div class="page-date-tag">${escapeHtml(entry.dateLabel)} · ${entry.day}요일</div>
     <div class="page-author">${escapeHtml(entry.name)}</div>
     <div class="page-emoji">${entry.satisfaction}</div>
-    <div class="page-body">${escapeHtml(entry.content)}</div>`;
+    <div class="page-body">${escapeHtml(entry.content)}</div>
+    <button type="button" class="btn-delete" data-id="${entry.id}">삭제</button>`;
 }
 
-async function loadBook() {
+function bindDeleteButtons() {
+  document.querySelectorAll('.btn-delete').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!id) return;
+      if (!ensureWriteAuth()) return;
+      if (!window.confirm('이 일기를 삭제할까요?')) return;
+
+      btn.disabled = true;
+      try {
+        await deleteEntry(id);
+        showToast('삭제되었습니다');
+        await loadBook(readDate);
+      } catch (err) {
+        console.error(err);
+        showToast('삭제에 실패했습니다. SQL 삭제 정책을 확인해 주세요');
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+async function loadBook(date) {
+  const meta = dateMeta(date);
+  readDate = date;
+  document.getElementById('readTitle').textContent = meta.label;
+
   const track = document.getElementById('bookTrack');
   track.innerHTML = `<div class="book-page"><div class="page-empty"><p>불러오는 중…</p></div></div>`;
+  currentPages = [{ type: 'empty' }];
   totalPages = 1;
   currentPage = 0;
   goToPage(0, false);
 
-  let pages = [{ type: 'cover' }];
+  let pages = [{
+    type: 'cover',
+    subtitle: [meta.label, meta.note].filter(Boolean).join(' · '),
+  }];
+
   try {
-    const allEntries = await getAllEntries();
-    if (allEntries.length === 0) {
+    const entries = await getEntriesByDate(date);
+    if (entries.length === 0) {
       pages.push({ type: 'empty' });
     } else {
-      allEntries.forEach((e) => pages.push(e));
+      entries.forEach((e) => pages.push(e));
     }
   } catch (err) {
     console.error(err);
@@ -212,11 +286,13 @@ async function loadBook() {
     showToast('일기 불러오기에 실패했습니다');
   }
 
+  currentPages = pages;
   totalPages = pages.length;
   currentPage = 0;
   track.innerHTML = pages.map((entry) =>
     `<div class="book-page">${buildPageContent(entry)}</div>`
   ).join('');
+  bindDeleteButtons();
   goToPage(0, false);
 }
 
@@ -237,17 +313,48 @@ function goToPage(index, animate = true) {
   document.getElementById('btnBookNext').disabled = currentPage >= totalPages - 1;
 }
 
-function openRead() {
-  showScreen('read');
-  loadBook();
+async function openBookSelect() {
+  const shelf = document.getElementById('bookShelf');
+  shelf.innerHTML = `<p class="shelf-loading">불러오는 중…</p>`;
+  showScreen('bookSelect');
+
+  let counts = {};
+  try {
+    counts = await getEntryCounts();
+  } catch (err) {
+    console.error(err);
+    showToast('책 목록을 불러오지 못했습니다');
+  }
+
+  shelf.innerHTML = DIARY_DATES.map((d) => {
+    const count = counts[d.date] || 0;
+    return `
+      <button type="button" class="shelf-book" data-date="${d.date}">
+        <span class="shelf-book-spine"></span>
+        <span class="shelf-book-body">
+          <span class="shelf-book-label">${d.label}</span>
+          ${d.note ? `<span class="shelf-book-note">${d.note}</span>` : ''}
+          <span class="shelf-book-count">${count}편의 일기</span>
+        </span>
+      </button>
+    `;
+  }).join('');
+
+  shelf.querySelectorAll('.shelf-book').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      showScreen('read');
+      await loadBook(btn.dataset.date);
+    });
+  });
 }
 
 document.getElementById('btnWrite').addEventListener('click', openWriteGate);
-document.getElementById('btnRead').addEventListener('click', openRead);
+document.getElementById('btnRead').addEventListener('click', openBookSelect);
 document.getElementById('btnBackPassword').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackDate').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackWrite').addEventListener('click', () => showScreen('main'));
-document.getElementById('btnBackRead').addEventListener('click', () => showScreen('main'));
+document.getElementById('btnBackBookSelect').addEventListener('click', () => showScreen('main'));
+document.getElementById('btnBackRead').addEventListener('click', () => openBookSelect());
 
 document.getElementById('passwordForm').addEventListener('submit', (e) => {
   e.preventDefault();
@@ -308,6 +415,7 @@ document.getElementById('btnBookNext').addEventListener('click', (e) => {
 
 const viewport = document.getElementById('bookViewport');
 viewport.addEventListener('click', (e) => {
+  if (e.target.closest('.btn-delete')) return;
   const rect = viewport.getBoundingClientRect();
   const x = e.clientX - rect.left;
   if (x > rect.width * 0.55) goToPage(currentPage + 1);
@@ -319,6 +427,7 @@ viewport.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 viewport.addEventListener('touchend', (e) => {
+  if (e.target.closest('.btn-delete')) return;
   const dx = e.changedTouches[0].clientX - touchStartX;
   if (Math.abs(dx) > 40) {
     if (dx < 0) goToPage(currentPage + 1);
