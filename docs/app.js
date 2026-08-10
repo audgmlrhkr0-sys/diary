@@ -256,12 +256,18 @@ function openWrite(date, info) {
 
 function buildPageContent(entry) {
   if (entry.type === 'cover') {
-    return `<div class="page-cover">
-      <p class="page-cover-eyebrow">전시연계프로그램</p>
-      <p class="page-cover-program">&lt;ON AIR: 규칙을 찾아라!&gt;</p>
-      <p class="page-cover-title">감상평 다이어리</p>
+    return `<div class="page-cover${entry.coverImage ? ' page-cover-photo' : ''}">
+      <div class="page-cover-top">
+        <p class="page-cover-eyebrow">전시연계프로그램</p>
+        <p class="page-cover-program">&lt;ON AIR: 규칙을 찾아라!&gt;</p>
+        <p class="page-cover-title">감상평 다이어리</p>
+      </div>
+      ${entry.coverImage ? `
+        <div class="page-cover-media">
+          <img src="${escapeHtml(entry.coverImage)}" alt="" class="page-cover-img">
+        </div>
+      ` : ''}
       ${entry.subtitle ? `<p class="page-cover-sub">${escapeHtml(entry.subtitle)}</p>` : ''}
-      <p class="page-cover-sub">좌우로 넘겨 읽어보세요</p>
     </div>`;
   }
   if (entry.type === 'empty') {
@@ -297,6 +303,7 @@ async function loadBook(date) {
   let pages = [{
     type: 'cover',
     subtitle: [meta.label, meta.note].filter(Boolean).join(' · '),
+    coverImage: date === '2026-08-10' ? 'pic.jpg' : '',
   }];
 
   try {
