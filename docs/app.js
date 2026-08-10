@@ -10,7 +10,7 @@ const DIARY_DATES = [
 
 const BOOK_GROUPS = [
   { id: 'pre', title: '사전모임' },
-  { id: 'class', title: '정식 수업' },
+  { id: 'class', title: '프로그램' },
 ];
 
 const WRITE_PASSWORD = '7968';
@@ -303,7 +303,7 @@ async function loadBook(date) {
   let pages = [{
     type: 'cover',
     subtitle: [meta.label, meta.note].filter(Boolean).join(' · '),
-    coverImage: date === '2026-08-10' ? 'pic.jpg' : '',
+    coverImage: date === '2026-08-10' ? 'pic.JPG' : '',
   }];
 
   try {
