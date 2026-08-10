@@ -26,6 +26,21 @@
     </div>
   </div>
 
+  <div id="passwordView" class="screen hidden">
+    <div class="sub-header">
+      <button type="button" class="btn-icon" id="btnBackPassword">←</button>
+      <span class="sub-title">일기 쓰기</span>
+    </div>
+    <form id="passwordForm" class="password-form">
+      <p class="password-desc">작성하려면 비밀번호를 입력해 주세요</p>
+      <label class="field">
+        <span class="field-label">비밀번호</span>
+        <input type="password" id="inputPassword" inputmode="numeric" maxlength="10" autocomplete="off" required>
+      </label>
+      <button type="submit" class="btn-primary">확인</button>
+    </form>
+  </div>
+
   <div id="dateView" class="screen hidden">
     <div class="sub-header">
       <button type="button" class="btn-icon" id="btnBackDate">←</button>
@@ -89,6 +104,8 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

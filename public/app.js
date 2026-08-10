@@ -1,5 +1,6 @@
 const DIARY_DATES = [
-  { date: '2026-08-10', label: '8월 10일', day: '월' },
+  { date: '2026-08-10', label: '8월 10일', day: '월', note: '대학생 참여자 사전모임' },
+  { date: '2026-08-13', label: '8월 13일', day: '목', note: '세움 측 참여자 사전모임' },
   { date: '2026-08-22', label: '8월 22일', day: '토' },
   { date: '2026-08-29', label: '8월 29일', day: '토' },
   { date: '2026-09-05', label: '9월 5일', day: '토' },
@@ -7,19 +8,31 @@ const DIARY_DATES = [
   { date: '2026-09-19', label: '9월 19일', day: '토' },
 ];
 
-const STORAGE_KEY = 'diary-entries';
+const WRITE_PASSWORD = '7968';
+const WRITE_AUTH_KEY = 'diary-write-auth';
 
 const screens = {
   main: document.getElementById('mainView'),
+  password: document.getElementById('passwordView'),
   date: document.getElementById('dateView'),
   write: document.getElementById('writeView'),
   read: document.getElementById('readView'),
 };
 
+let supabase = null;
 let currentDate = null;
 let currentPage = 0;
 let totalPages = 0;
 let touchStartX = 0;
+
+function initSupabase() {
+  const cfg = window.SUPABASE_CONFIG || {};
+  if (!cfg.url || !cfg.anonKey || cfg.url.includes('YOUR_') || cfg.anonKey.includes('YOUR_')) {
+    showToast('config.js에 Supabase URL과 키를 넣어주세요');
+    return null;
+  }
+  return window.supabase.createClient(cfg.url, cfg.anonKey);
+}
 
 function showScreen(name) {
   Object.keys(screens).forEach((key) => {
@@ -34,9 +47,10 @@ function showToast(msg) {
   setTimeout(() => toast.classList.add('hidden'), 2200);
 }
 
-function formatDateLabel(dateStr, day) {
-  const [, m, d] = dateStr.split('-');
-  return `2026년 ${parseInt(m)}월 ${parseInt(d)}일 (${day})`;
+function formatDateLabel(info) {
+  const [, m, d] = info.date.split('-');
+  const base = `2026년 ${parseInt(m)}월 ${parseInt(d)}일 (${info.day})`;
+  return info.note ? `${base} · ${info.note}` : base;
 }
 
 function escapeHtml(str) {
@@ -45,51 +59,75 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function readEntries() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  } catch {
-    return {};
-  }
+function dateMeta(dateStr) {
+  return DIARY_DATES.find((d) => d.date === dateStr) || { date: dateStr, label: dateStr, day: '' };
 }
 
-function saveEntry(data) {
-  const entries = readEntries();
-  if (!entries[data.date]) entries[data.date] = [];
+async function saveEntry(data) {
+  if (!supabase) throw new Error('Supabase가 설정되지 않았습니다');
 
-  const entry = {
-    id: Date.now().toString(36),
-    name: data.name,
-    content: data.content,
-    satisfaction: data.satisfaction,
-    createdAt: new Date().toISOString(),
-  };
+  const { data: row, error } = await supabase
+    .from('diary_entries')
+    .insert({
+      date: data.date,
+      name: data.name,
+      content: data.content,
+      satisfaction: data.satisfaction,
+    })
+    .select()
+    .single();
 
-  entries[data.date].push(entry);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  return entry;
+  if (error) throw error;
+  return row;
 }
 
-function getAllEntries() {
-  const entries = readEntries();
-  const all = [];
-  for (const d of DIARY_DATES) {
-    for (const e of entries[d.date] || []) {
-      all.push({ ...e, date: d.date, dateLabel: d.label, day: d.day });
-    }
+async function getAllEntries() {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('diary_entries')
+    .select('id, date, name, content, satisfaction, created_at')
+    .order('date', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+
+  const allowed = new Set(DIARY_DATES.map((d) => d.date));
+  return (data || [])
+    .filter((e) => allowed.has(e.date))
+    .map((e) => {
+      const meta = dateMeta(e.date);
+      return {
+        id: e.id,
+        name: e.name,
+        content: e.content,
+        satisfaction: e.satisfaction,
+        createdAt: e.created_at,
+        date: e.date,
+        dateLabel: meta.note ? `${meta.label} (${meta.note})` : meta.label,
+        day: meta.day,
+      };
+    });
+}
+
+function openWriteGate() {
+  if (sessionStorage.getItem(WRITE_AUTH_KEY) === '1') {
+    openDateSelect();
+    return;
   }
-  all.sort((a, b) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return new Date(a.createdAt) - new Date(b.createdAt);
-  });
-  return all;
+  document.getElementById('passwordForm').reset();
+  showScreen('password');
+  setTimeout(() => document.getElementById('inputPassword').focus(), 100);
 }
 
 function openDateSelect() {
   const list = document.getElementById('datePickerList');
   list.innerHTML = DIARY_DATES.map((d) => `
     <button type="button" class="date-pick-btn" data-date="${d.date}">
-      <span>${d.label}</span>
+      <span class="date-pick-main">
+        <span class="date-pick-label">${d.label}</span>
+        ${d.note ? `<span class="date-pick-note">${d.note}</span>` : ''}
+      </span>
       <span class="date-pick-day">${d.day}요일</span>
     </button>
   `).join('');
@@ -106,7 +144,7 @@ function openDateSelect() {
 
 function openWrite(date, info) {
   currentDate = date;
-  document.getElementById('writeDateLabel').textContent = formatDateLabel(date, info.day);
+  document.getElementById('writeDateLabel').textContent = formatDateLabel(info);
 
   const form = document.getElementById('diaryForm');
   form.reset();
@@ -130,29 +168,44 @@ function buildPageContent(entry) {
       <p>아직 작성된 일기가 없어요<br>일기 쓰기에서 첫 일기를 남겨보세요</p>
     </div>`;
   }
+  if (entry.type === 'error') {
+    return `<div class="page-empty">
+      <div class="page-empty-icon">⚠️</div>
+      <p>일기를 불러오지 못했어요<br>잠시 후 다시 시도해 주세요</p>
+    </div>`;
+  }
   return `<div class="page-date-tag">${entry.dateLabel} · ${entry.day}요일</div>
     <div class="page-author">${escapeHtml(entry.name)}</div>
     <div class="page-emoji">${entry.satisfaction}</div>
     <div class="page-body">${escapeHtml(entry.content)}</div>`;
 }
 
-function loadBook() {
-  const allEntries = getAllEntries();
-  const pages = [{ type: 'cover' }];
-  if (allEntries.length === 0) {
-    pages.push({ type: 'empty' });
-  } else {
-    allEntries.forEach((e) => pages.push(e));
+async function loadBook() {
+  const track = document.getElementById('bookTrack');
+  track.innerHTML = `<div class="book-page"><div class="page-empty"><p>불러오는 중…</p></div></div>`;
+  totalPages = 1;
+  currentPage = 0;
+  goToPage(0, false);
+
+  let pages = [{ type: 'cover' }];
+  try {
+    const allEntries = await getAllEntries();
+    if (allEntries.length === 0) {
+      pages.push({ type: 'empty' });
+    } else {
+      allEntries.forEach((e) => pages.push(e));
+    }
+  } catch (err) {
+    console.error(err);
+    pages.push({ type: 'error' });
+    showToast('일기 불러오기에 실패했습니다');
   }
 
   totalPages = pages.length;
   currentPage = 0;
-
-  const track = document.getElementById('bookTrack');
   track.innerHTML = pages.map((entry) =>
     `<div class="book-page">${buildPageContent(entry)}</div>`
   ).join('');
-
   goToPage(0, false);
 }
 
@@ -178,11 +231,25 @@ function openRead() {
   loadBook();
 }
 
-document.getElementById('btnWrite').addEventListener('click', openDateSelect);
+document.getElementById('btnWrite').addEventListener('click', openWriteGate);
 document.getElementById('btnRead').addEventListener('click', openRead);
+document.getElementById('btnBackPassword').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackDate').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackWrite').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackRead').addEventListener('click', () => showScreen('main'));
+
+document.getElementById('passwordForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const value = document.getElementById('inputPassword').value.trim();
+  if (value !== WRITE_PASSWORD) {
+    showToast('비밀번호가 틀렸습니다');
+    document.getElementById('inputPassword').value = '';
+    document.getElementById('inputPassword').focus();
+    return;
+  }
+  sessionStorage.setItem(WRITE_AUTH_KEY, '1');
+  openDateSelect();
+});
 
 document.querySelectorAll('.emoji-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -192,21 +259,30 @@ document.querySelectorAll('.emoji-btn').forEach((btn) => {
   });
 });
 
-document.getElementById('diaryForm').addEventListener('submit', (e) => {
+document.getElementById('diaryForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const name = document.getElementById('inputName').value.trim();
   const content = document.getElementById('inputContent').value.trim();
   const satisfaction = document.getElementById('inputSatisfaction').value;
+  const btn = document.getElementById('btnSubmit');
 
   if (!name || !content || !satisfaction) {
     showToast('모든 항목을 입력해 주세요');
     return;
   }
 
-  saveEntry({ date: currentDate, name, content, satisfaction });
-  showToast('제출되었습니다');
-  showScreen('main');
+  btn.disabled = true;
+  try {
+    await saveEntry({ date: currentDate, name, content, satisfaction });
+    showToast('제출되었습니다');
+    showScreen('main');
+  } catch (err) {
+    console.error(err);
+    showToast('저장에 실패했습니다. 잠시 후 다시 시도해 주세요');
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('btnBookPrev').addEventListener('click', (e) => {
@@ -238,3 +314,5 @@ viewport.addEventListener('touchend', (e) => {
     else goToPage(currentPage - 1);
   }
 }, { passive: true });
+
+supabase = initSupabase();
