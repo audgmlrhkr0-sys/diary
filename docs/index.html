@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- 메인 -->
   <div id="mainView" class="screen">
     <div class="main-center">
       <h1 class="main-title">
@@ -31,7 +30,6 @@
     </div>
   </div>
 
-  <!-- 쓰기 비밀번호 -->
   <div id="passwordView" class="screen hidden">
     <div class="sub-header">
       <button type="button" class="btn-icon" id="btnBackPassword">←</button>
@@ -47,7 +45,36 @@
     </form>
   </div>
 
-  <!-- 날짜 선택 -->
+  <div id="adminPasswordView" class="screen hidden">
+    <div class="sub-header">
+      <button type="button" class="btn-icon" id="btnBackAdminPassword">←</button>
+      <span class="sub-title">관리자</span>
+    </div>
+    <form id="adminPasswordForm" class="password-form">
+      <p class="password-desc">관리자 비밀번호를 입력해 주세요</p>
+      <label class="field">
+        <span class="field-label">비밀번호</span>
+        <input type="password" id="inputAdminPassword" inputmode="numeric" maxlength="10" autocomplete="off" required>
+      </label>
+      <button type="submit" class="btn-primary">확인</button>
+    </form>
+  </div>
+
+  <div id="adminView" class="screen hidden">
+    <div class="sub-header">
+      <button type="button" class="btn-icon" id="btnBackAdmin">←</button>
+      <span class="sub-title">일기 관리</span>
+    </div>
+    <div class="admin-toolbar">
+      <label class="admin-check-all">
+        <input type="checkbox" id="adminSelectAll">
+        <span>전체 선택</span>
+      </label>
+      <button type="button" class="btn-admin-delete" id="btnAdminDelete" disabled>선택 삭제</button>
+    </div>
+    <div class="admin-list" id="adminList"></div>
+  </div>
+
   <div id="dateView" class="screen hidden">
     <div class="sub-header">
       <button type="button" class="btn-icon" id="btnBackDate">←</button>
@@ -56,7 +83,6 @@
     <div class="date-list" id="datePickerList"></div>
   </div>
 
-  <!-- 일기 쓰기 -->
   <div id="writeView" class="screen hidden">
     <div class="sub-header">
       <button type="button" class="btn-icon" id="btnBackWrite">←</button>
@@ -87,7 +113,6 @@
     </form>
   </div>
 
-  <!-- 책 선택 (일기 읽기) -->
   <div id="bookSelectView" class="screen hidden">
     <div class="sub-header">
       <button type="button" class="btn-icon" id="btnBackBookSelect">←</button>
@@ -96,7 +121,6 @@
     <div class="book-shelf" id="bookShelf"></div>
   </div>
 
-  <!-- 일기 읽기 -->
   <div id="readView" class="screen hidden">
     <div class="sub-header">
       <button type="button" class="btn-icon" id="btnBackRead">←</button>
@@ -120,6 +144,12 @@
       <p class="book-hint">좌우로 넘겨 일기를 읽어보세요</p>
     </section>
   </div>
+
+  <button type="button" class="admin-fab" id="btnAdmin" aria-label="관리자">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.6.24-1.14.55-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.49.39 1.03.7 1.63.94l.36 2.54c.05.24.25.42.49.42h3.8c.24 0 .44-.18.49-.42l.36-2.54c.6-.24 1.14-.55 1.63-.94l2.39.96c.25.12.54.02.68-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z"/>
+    </svg>
+  </button>
 
   <div id="toast" class="toast hidden"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

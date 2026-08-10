@@ -1,19 +1,23 @@
 const DIARY_DATES = [
-  { date: '2026-08-10', label: '8월 10일', day: '월', note: '대학생 참여자 사전모임' },
-  { date: '2026-08-13', label: '8월 13일', day: '목', note: '세움 측 참여자 사전모임' },
-  { date: '2026-08-22', label: '8월 22일', day: '토' },
-  { date: '2026-08-29', label: '8월 29일', day: '토' },
-  { date: '2026-09-05', label: '9월 5일', day: '토' },
-  { date: '2026-09-12', label: '9월 12일', day: '토' },
-  { date: '2026-09-19', label: '9월 19일', day: '토' },
+  { date: '2026-08-10', label: '8월 10일', day: '월', note: '대학생 참여자 사전모임', tone: 0 },
+  { date: '2026-08-13', label: '8월 13일', day: '목', note: '세움 측 참여자 사전모임', tone: 1 },
+  { date: '2026-08-22', label: '8월 22일', day: '토', tone: 2 },
+  { date: '2026-08-29', label: '8월 29일', day: '토', tone: 3 },
+  { date: '2026-09-05', label: '9월 5일', day: '토', tone: 4 },
+  { date: '2026-09-12', label: '9월 12일', day: '토', tone: 5 },
+  { date: '2026-09-19', label: '9월 19일', day: '토', tone: 0 },
 ];
 
 const WRITE_PASSWORD = '7968';
 const WRITE_AUTH_KEY = 'diary-write-auth';
+const ADMIN_PASSWORD = '9650';
+const ADMIN_AUTH_KEY = 'diary-admin-auth';
 
 const screens = {
   main: document.getElementById('mainView'),
   password: document.getElementById('passwordView'),
+  adminPassword: document.getElementById('adminPasswordView'),
+  admin: document.getElementById('adminView'),
   date: document.getElementById('dateView'),
   write: document.getElementById('writeView'),
   bookSelect: document.getElementById('bookSelectView'),
@@ -23,7 +27,6 @@ const screens = {
 let db = null;
 let currentDate = null;
 let readDate = null;
-let currentPages = [];
 let currentPage = 0;
 let totalPages = 0;
 let touchStartX = 0;
@@ -52,6 +55,8 @@ function showScreen(name) {
     if (!screens[key]) return;
     screens[key].classList.toggle('hidden', key !== name);
   });
+  const fab = document.getElementById('btnAdmin');
+  fab.classList.toggle('hidden', name !== 'main');
 }
 
 function showToast(msg) {
@@ -74,19 +79,12 @@ function escapeHtml(str) {
 }
 
 function dateMeta(dateStr) {
-  return DIARY_DATES.find((d) => d.date === dateStr) || { date: dateStr, label: dateStr, day: '' };
+  return DIARY_DATES.find((d) => d.date === dateStr) || { date: dateStr, label: dateStr, day: '', tone: 0 };
 }
 
-function ensureWriteAuth() {
-  if (sessionStorage.getItem(WRITE_AUTH_KEY) === '1') return true;
-  const value = window.prompt('삭제를 위해 비밀번호를 입력해 주세요');
-  if (value === null) return false;
-  if (value.trim() !== WRITE_PASSWORD) {
-    showToast('비밀번호가 틀렸습니다');
-    return false;
-  }
-  sessionStorage.setItem(WRITE_AUTH_KEY, '1');
-  return true;
+function coverMonthDay(dateStr) {
+  const [, m, d] = dateStr.split('-');
+  return { month: `${parseInt(m)}월`, day: `${parseInt(d)}` };
 }
 
 async function saveEntry(data) {
@@ -132,6 +130,35 @@ async function getEntriesByDate(date) {
   }));
 }
 
+async function getAllEntries() {
+  if (!db) return [];
+
+  const { data, error } = await db
+    .from('diary_entries')
+    .select('id, date, name, content, satisfaction, created_at')
+    .order('date', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+
+  const allowed = new Set(DIARY_DATES.map((d) => d.date));
+  return (data || [])
+    .filter((e) => allowed.has(e.date))
+    .map((e) => {
+      const meta = dateMeta(e.date);
+      return {
+        id: e.id,
+        name: e.name,
+        content: e.content,
+        satisfaction: e.satisfaction,
+        createdAt: e.created_at,
+        date: e.date,
+        dateLabel: meta.note ? `${meta.label} (${meta.note})` : meta.label,
+        day: meta.day,
+      };
+    });
+}
+
 async function getEntryCounts() {
   if (!db) return {};
 
@@ -148,14 +175,12 @@ async function getEntryCounts() {
   return counts;
 }
 
-async function deleteEntry(id) {
+async function deleteEntries(ids) {
   if (!db) throw new Error('Supabase가 설정되지 않았습니다');
-
   const { error } = await db
     .from('diary_entries')
     .delete()
-    .eq('id', id);
-
+    .in('id', ids);
   if (error) throw error;
 }
 
@@ -167,6 +192,16 @@ function openWriteGate() {
   document.getElementById('passwordForm').reset();
   showScreen('password');
   setTimeout(() => document.getElementById('inputPassword').focus(), 100);
+}
+
+function openAdminGate() {
+  if (sessionStorage.getItem(ADMIN_AUTH_KEY) === '1') {
+    openAdmin();
+    return;
+  }
+  document.getElementById('adminPasswordForm').reset();
+  showScreen('adminPassword');
+  setTimeout(() => document.getElementById('inputAdminPassword').focus(), 100);
 }
 
 function openDateSelect() {
@@ -229,31 +264,7 @@ function buildPageContent(entry) {
   return `<div class="page-date-tag">${escapeHtml(entry.dateLabel)} · ${entry.day}요일</div>
     <div class="page-author">${escapeHtml(entry.name)}</div>
     <div class="page-emoji">${entry.satisfaction}</div>
-    <div class="page-body">${escapeHtml(entry.content)}</div>
-    <button type="button" class="btn-delete" data-id="${entry.id}">삭제</button>`;
-}
-
-function bindDeleteButtons() {
-  document.querySelectorAll('.btn-delete').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const id = btn.dataset.id;
-      if (!id) return;
-      if (!ensureWriteAuth()) return;
-      if (!window.confirm('이 일기를 삭제할까요?')) return;
-
-      btn.disabled = true;
-      try {
-        await deleteEntry(id);
-        showToast('삭제되었습니다');
-        await loadBook(readDate);
-      } catch (err) {
-        console.error(err);
-        showToast('삭제에 실패했습니다. SQL 삭제 정책을 확인해 주세요');
-        btn.disabled = false;
-      }
-    });
-  });
+    <div class="page-body">${escapeHtml(entry.content)}</div>`;
 }
 
 async function loadBook(date) {
@@ -263,7 +274,6 @@ async function loadBook(date) {
 
   const track = document.getElementById('bookTrack');
   track.innerHTML = `<div class="book-page"><div class="page-empty"><p>불러오는 중…</p></div></div>`;
-  currentPages = [{ type: 'empty' }];
   totalPages = 1;
   currentPage = 0;
   goToPage(0, false);
@@ -286,13 +296,11 @@ async function loadBook(date) {
     showToast('일기 불러오기에 실패했습니다');
   }
 
-  currentPages = pages;
   totalPages = pages.length;
   currentPage = 0;
   track.innerHTML = pages.map((entry) =>
     `<div class="book-page">${buildPageContent(entry)}</div>`
   ).join('');
-  bindDeleteButtons();
   goToPage(0, false);
 }
 
@@ -328,19 +336,22 @@ async function openBookSelect() {
 
   shelf.innerHTML = DIARY_DATES.map((d) => {
     const count = counts[d.date] || 0;
+    const md = coverMonthDay(d.date);
     return `
-      <button type="button" class="shelf-book" data-date="${d.date}">
-        <span class="shelf-book-spine"></span>
-        <span class="shelf-book-body">
-          <span class="shelf-book-label">${d.label}</span>
-          ${d.note ? `<span class="shelf-book-note">${d.note}</span>` : ''}
-          <span class="shelf-book-count">${count}편의 일기</span>
+      <button type="button" class="cover-book tone-${d.tone}" data-date="${d.date}">
+        <span class="cover-book-spine"></span>
+        <span class="cover-book-face">
+          <span class="cover-book-month">${md.month}</span>
+          <span class="cover-book-day">${md.day}</span>
+          <span class="cover-book-weekday">${d.day}요일</span>
+          ${d.note ? `<span class="cover-book-note">${d.note}</span>` : ''}
+          <span class="cover-book-count">${count}편</span>
         </span>
       </button>
     `;
   }).join('');
 
-  shelf.querySelectorAll('.shelf-book').forEach((btn) => {
+  shelf.querySelectorAll('.cover-book').forEach((btn) => {
     btn.addEventListener('click', async () => {
       showScreen('read');
       await loadBook(btn.dataset.date);
@@ -348,9 +359,61 @@ async function openBookSelect() {
   });
 }
 
+function updateAdminDeleteState() {
+  const checked = document.querySelectorAll('#adminList input[type="checkbox"]:checked').length;
+  const btn = document.getElementById('btnAdminDelete');
+  btn.disabled = checked === 0;
+  btn.textContent = checked > 0 ? `선택 삭제 (${checked})` : '선택 삭제';
+}
+
+async function openAdmin() {
+  const list = document.getElementById('adminList');
+  const selectAll = document.getElementById('adminSelectAll');
+  selectAll.checked = false;
+  list.innerHTML = `<p class="shelf-loading">불러오는 중…</p>`;
+  showScreen('admin');
+  updateAdminDeleteState();
+
+  try {
+    const entries = await getAllEntries();
+    if (entries.length === 0) {
+      list.innerHTML = `<p class="shelf-loading">삭제할 일기가 없습니다</p>`;
+      return;
+    }
+
+    list.innerHTML = entries.map((e) => `
+      <label class="admin-item">
+        <input type="checkbox" value="${e.id}">
+        <span class="admin-item-body">
+          <span class="admin-item-top">
+            <span class="admin-item-name">${escapeHtml(e.name)} ${e.satisfaction}</span>
+            <span class="admin-item-date">${escapeHtml(e.dateLabel)}</span>
+          </span>
+          <span class="admin-item-content">${escapeHtml(e.content)}</span>
+        </span>
+      </label>
+    `).join('');
+
+    list.querySelectorAll('input[type="checkbox"]').forEach((box) => {
+      box.addEventListener('change', () => {
+        const boxes = [...list.querySelectorAll('input[type="checkbox"]')];
+        selectAll.checked = boxes.length > 0 && boxes.every((b) => b.checked);
+        updateAdminDeleteState();
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = `<p class="shelf-loading">목록을 불러오지 못했습니다</p>`;
+    showToast('관리 목록 불러오기 실패');
+  }
+}
+
 document.getElementById('btnWrite').addEventListener('click', openWriteGate);
 document.getElementById('btnRead').addEventListener('click', openBookSelect);
+document.getElementById('btnAdmin').addEventListener('click', openAdminGate);
 document.getElementById('btnBackPassword').addEventListener('click', () => showScreen('main'));
+document.getElementById('btnBackAdminPassword').addEventListener('click', () => showScreen('main'));
+document.getElementById('btnBackAdmin').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackDate').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackWrite').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackBookSelect').addEventListener('click', () => showScreen('main'));
@@ -367,6 +430,45 @@ document.getElementById('passwordForm').addEventListener('submit', (e) => {
   }
   sessionStorage.setItem(WRITE_AUTH_KEY, '1');
   openDateSelect();
+});
+
+document.getElementById('adminPasswordForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const value = document.getElementById('inputAdminPassword').value.trim();
+  if (value !== ADMIN_PASSWORD) {
+    showToast('비밀번호가 틀렸습니다');
+    document.getElementById('inputAdminPassword').value = '';
+    document.getElementById('inputAdminPassword').focus();
+    return;
+  }
+  sessionStorage.setItem(ADMIN_AUTH_KEY, '1');
+  openAdmin();
+});
+
+document.getElementById('adminSelectAll').addEventListener('change', (e) => {
+  document.querySelectorAll('#adminList input[type="checkbox"]').forEach((box) => {
+    box.checked = e.target.checked;
+  });
+  updateAdminDeleteState();
+});
+
+document.getElementById('btnAdminDelete').addEventListener('click', async () => {
+  const ids = [...document.querySelectorAll('#adminList input[type="checkbox"]:checked')]
+    .map((box) => box.value);
+  if (ids.length === 0) return;
+  if (!window.confirm(`${ids.length}개의 일기를 삭제할까요?`)) return;
+
+  const btn = document.getElementById('btnAdminDelete');
+  btn.disabled = true;
+  try {
+    await deleteEntries(ids);
+    showToast('삭제되었습니다');
+    await openAdmin();
+  } catch (err) {
+    console.error(err);
+    showToast('삭제에 실패했습니다');
+    updateAdminDeleteState();
+  }
 });
 
 document.querySelectorAll('.emoji-btn').forEach((btn) => {
@@ -415,7 +517,6 @@ document.getElementById('btnBookNext').addEventListener('click', (e) => {
 
 const viewport = document.getElementById('bookViewport');
 viewport.addEventListener('click', (e) => {
-  if (e.target.closest('.btn-delete')) return;
   const rect = viewport.getBoundingClientRect();
   const x = e.clientX - rect.left;
   if (x > rect.width * 0.55) goToPage(currentPage + 1);
@@ -427,7 +528,6 @@ viewport.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 viewport.addEventListener('touchend', (e) => {
-  if (e.target.closest('.btn-delete')) return;
   const dx = e.changedTouches[0].clientX - touchStartX;
   if (Math.abs(dx) > 40) {
     if (dx < 0) goToPage(currentPage + 1);
@@ -436,3 +536,4 @@ viewport.addEventListener('touchend', (e) => {
 }, { passive: true });
 
 db = initSupabase();
+showScreen('main');
