@@ -136,10 +136,24 @@ body {
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 1.25rem;
   max-width: 420px;
   margin: 0 auto;
   width: 100%;
+}
+
+.date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.date-group-title {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-sub);
+  letter-spacing: 0.04em;
+  margin-left: 0.15rem;
 }
 
 .date-pick-btn {
@@ -174,17 +188,30 @@ body {
 
 /* 책장 - 북커버 */
 .book-shelf {
-  padding: 1.25rem 1rem 2rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 0.85rem;
+  padding: 1rem 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   max-width: 420px;
   margin: 0 auto;
   width: 100%;
 }
 
+.shelf-section-title {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-sub);
+  letter-spacing: 0.04em;
+  margin: 0 0 0.75rem 0.15rem;
+}
+
+.shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 0.85rem;
+}
+
 .shelf-loading {
-  grid-column: 1 / -1;
   text-align: center;
   color: var(--text-sub);
   padding: 2rem 0;
@@ -531,28 +558,94 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--paper);
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.06) 0, transparent 14px),
+    var(--paper);
   border: 1px solid var(--paper-shadow);
   border-radius: 2px 6px 6px 2px;
   box-shadow: 2px 4px 16px rgba(0,0,0,0.1);
   cursor: pointer;
+  perspective: 2200px;
+  perspective-origin: left center;
 }
 
 .book-track {
-  display: flex;
+  position: relative;
+  width: 100%;
   height: 100%;
-  transition: transform 0.45s ease;
+  transform-style: preserve-3d;
 }
 
 .book-page {
-  min-width: 100%;
-  height: 100%;
-  flex-shrink: 0;
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: rotateY(0deg);
+  transform-style: preserve-3d;
+  transition: transform 0.68s cubic-bezier(0.33, 0.1, 0.25, 1);
+  will-change: transform;
+}
+
+.book-page.is-flipped {
+  transform: rotateY(-178deg);
+  pointer-events: none;
+}
+
+.page-front,
+.page-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 0 4px 4px 0;
+}
+
+.page-front {
   padding: 2rem 1.75rem;
   overflow-y: auto;
-  background: var(--paper);
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.05), transparent 10px),
+    var(--paper);
   display: flex;
   flex-direction: column;
+  box-shadow: inset -1px 0 0 rgba(0,0,0,0.03);
+}
+
+.page-back {
+  background:
+    linear-gradient(270deg, rgba(0,0,0,0.08), transparent 18%),
+    linear-gradient(180deg, #f3eee4, #ebe4d8);
+  transform: rotateY(180deg);
+  box-shadow: inset 8px 0 18px rgba(0,0,0,0.08);
+}
+
+.book-page.is-turning-forward .page-front,
+.book-page.is-turning-back .page-front {
+  box-shadow:
+    -12px 0 28px rgba(0,0,0,0.18),
+    inset -18px 0 24px rgba(0,0,0,0.06);
+}
+
+.book-page.is-turning-forward::after,
+.book-page.is-turning-back::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.18) 42%,
+    rgba(0,0,0,0.08) 78%,
+    rgba(0,0,0,0.16) 100%
+  );
+  opacity: 0.85;
+  border-radius: 0 4px 4px 0;
+  transform: translateZ(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-page { transition: none; }
 }
 
 .page-cover {

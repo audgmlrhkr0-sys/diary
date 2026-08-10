@@ -1,11 +1,16 @@
 const DIARY_DATES = [
-  { date: '2026-08-10', label: '8월 10일', day: '월', note: '대학생 참여자 사전모임', tone: 0 },
-  { date: '2026-08-13', label: '8월 13일', day: '목', note: '세움 측 참여자 사전모임', tone: 1 },
-  { date: '2026-08-22', label: '8월 22일', day: '토', tone: 2 },
-  { date: '2026-08-29', label: '8월 29일', day: '토', tone: 3 },
-  { date: '2026-09-05', label: '9월 5일', day: '토', tone: 4 },
-  { date: '2026-09-12', label: '9월 12일', day: '토', tone: 5 },
-  { date: '2026-09-19', label: '9월 19일', day: '토', tone: 0 },
+  { date: '2026-08-10', label: '8월 10일', day: '월', note: '대학생 참여자 사전모임', group: 'pre', tone: 0 },
+  { date: '2026-08-13', label: '8월 13일', day: '목', note: '세움 측 참여자 사전모임', group: 'pre', tone: 1 },
+  { date: '2026-08-22', label: '8월 22일', day: '토', note: '1회차', group: 'class', tone: 2 },
+  { date: '2026-08-29', label: '8월 29일', day: '토', note: '2회차', group: 'class', tone: 3 },
+  { date: '2026-09-05', label: '9월 5일', day: '토', note: '3회차', group: 'class', tone: 4 },
+  { date: '2026-09-12', label: '9월 12일', day: '토', note: '4회차', group: 'class', tone: 5 },
+  { date: '2026-09-19', label: '9월 19일', day: '토', note: '5회차', group: 'class', tone: 0 },
+];
+
+const BOOK_GROUPS = [
+  { id: 'pre', title: '사전모임' },
+  { id: 'class', title: '정식 수업' },
 ];
 
 const WRITE_PASSWORD = '7968';
@@ -30,6 +35,8 @@ let readDate = null;
 let currentPage = 0;
 let totalPages = 0;
 let touchStartX = 0;
+let isFlipping = false;
+const FLIP_MS = 680;
 
 function initSupabase() {
   const cfg = window.SUPABASE_CONFIG || {};
@@ -206,15 +213,23 @@ function openAdminGate() {
 
 function openDateSelect() {
   const list = document.getElementById('datePickerList');
-  list.innerHTML = DIARY_DATES.map((d) => `
-    <button type="button" class="date-pick-btn" data-date="${d.date}">
-      <span class="date-pick-main">
-        <span class="date-pick-label">${d.label}</span>
-        ${d.note ? `<span class="date-pick-note">${d.note}</span>` : ''}
-      </span>
-      <span class="date-pick-day">${d.day}요일</span>
-    </button>
-  `).join('');
+  list.innerHTML = BOOK_GROUPS.map((group) => {
+    const dates = DIARY_DATES.filter((d) => d.group === group.id);
+    return `
+      <div class="date-group">
+        <p class="date-group-title">${group.title}</p>
+        ${dates.map((d) => `
+          <button type="button" class="date-pick-btn" data-date="${d.date}">
+            <span class="date-pick-main">
+              <span class="date-pick-label">${d.label}</span>
+              ${d.note ? `<span class="date-pick-note">${d.note}</span>` : ''}
+            </span>
+            <span class="date-pick-day">${d.day}요일</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
 
   list.querySelectorAll('.date-pick-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -273,6 +288,7 @@ async function loadBook(date) {
   document.getElementById('readTitle').textContent = meta.label;
 
   const track = document.getElementById('bookTrack');
+  isFlipping = false;
   track.innerHTML = `<div class="book-page"><div class="page-empty"><p>불러오는 중…</p></div></div>`;
   totalPages = 1;
   currentPage = 0;
@@ -298,27 +314,66 @@ async function loadBook(date) {
 
   totalPages = pages.length;
   currentPage = 0;
-  track.innerHTML = pages.map((entry) =>
-    `<div class="book-page">${buildPageContent(entry)}</div>`
+  track.innerHTML = pages.map((entry, i) =>
+    `<div class="book-page" data-index="${i}">
+      <div class="page-front">${buildPageContent(entry)}</div>
+      <div class="page-back" aria-hidden="true"></div>
+    </div>`
   ).join('');
   goToPage(0, false);
 }
 
+function syncPageLayers(animateFrom) {
+  const pages = [...document.querySelectorAll('#bookTrack .book-page')];
+  pages.forEach((page, i) => {
+    const flipped = i < currentPage;
+    page.classList.toggle('is-flipped', flipped);
+    page.classList.remove('is-turning-forward', 'is-turning-back');
+
+    if (animateFrom != null) {
+      if (animateFrom < currentPage && i === animateFrom) {
+        page.classList.add('is-turning-forward');
+        page.style.zIndex = String(totalPages + 30);
+      } else if (animateFrom > currentPage && i === currentPage) {
+        page.classList.add('is-turning-back');
+        page.style.zIndex = String(totalPages + 30);
+      } else {
+        page.style.zIndex = flipped ? String(i + 1) : String(totalPages - i + 10);
+      }
+    } else {
+      page.style.zIndex = flipped ? String(i + 1) : String(totalPages - i + 10);
+    }
+  });
+}
+
 function goToPage(index, animate = true) {
   if (index < 0 || index >= totalPages) return;
+  if (animate && (isFlipping || index === currentPage)) return;
+
+  const from = currentPage;
   currentPage = index;
 
-  const track = document.getElementById('bookTrack');
-  if (!animate) track.style.transition = 'none';
-  track.style.transform = `translateX(-${currentPage * 100}%)`;
   if (!animate) {
-    track.offsetHeight;
-    track.style.transition = '';
+    syncPageLayers(null);
+  } else {
+    isFlipping = true;
+    syncPageLayers(from);
+    window.setTimeout(() => {
+      isFlipping = false;
+      syncPageLayers(null);
+    }, FLIP_MS);
   }
 
   document.getElementById('bookPageNum').textContent = `${currentPage + 1} / ${totalPages}`;
-  document.getElementById('btnBookPrev').disabled = currentPage === 0;
-  document.getElementById('btnBookNext').disabled = currentPage >= totalPages - 1;
+  document.getElementById('btnBookPrev').disabled = currentPage === 0 || isFlipping;
+  document.getElementById('btnBookNext').disabled = currentPage >= totalPages - 1 || isFlipping;
+
+  if (animate) {
+    window.setTimeout(() => {
+      document.getElementById('btnBookPrev').disabled = currentPage === 0;
+      document.getElementById('btnBookNext').disabled = currentPage >= totalPages - 1;
+    }, FLIP_MS);
+  }
 }
 
 async function openBookSelect() {
@@ -334,7 +389,7 @@ async function openBookSelect() {
     showToast('책 목록을 불러오지 못했습니다');
   }
 
-  shelf.innerHTML = DIARY_DATES.map((d) => {
+  function renderCover(d) {
     const count = counts[d.date] || 0;
     const md = coverMonthDay(d.date);
     return `
@@ -348,6 +403,18 @@ async function openBookSelect() {
           <span class="cover-book-count">${count}편</span>
         </span>
       </button>
+    `;
+  }
+
+  shelf.innerHTML = BOOK_GROUPS.map((group) => {
+    const dates = DIARY_DATES.filter((d) => d.group === group.id);
+    return `
+      <section class="shelf-section">
+        <h2 class="shelf-section-title">${group.title}</h2>
+        <div class="shelf-grid">
+          ${dates.map(renderCover).join('')}
+        </div>
+      </section>
     `;
   }).join('');
 
