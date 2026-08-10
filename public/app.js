@@ -241,6 +241,12 @@ function openDateSelect() {
   showScreen('date');
 }
 
+function autoResizeTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 function openWrite(date, info) {
   currentDate = date;
   document.getElementById('writeDateLabel').textContent = formatDateLabel(info);
@@ -249,6 +255,9 @@ function openWrite(date, info) {
   form.reset();
   document.getElementById('inputSatisfaction').value = '';
   document.querySelectorAll('.emoji-btn').forEach((b) => b.classList.remove('selected'));
+
+  const contentInput = document.getElementById('inputContent');
+  autoResizeTextarea(contentInput);
 
   showScreen('write');
   setTimeout(() => document.getElementById('inputName').focus(), 100);
@@ -551,6 +560,10 @@ document.querySelectorAll('.emoji-btn').forEach((btn) => {
     btn.classList.add('selected');
     document.getElementById('inputSatisfaction').value = btn.dataset.emoji;
   });
+});
+
+document.getElementById('inputContent').addEventListener('input', (e) => {
+  autoResizeTextarea(e.target);
 });
 
 document.getElementById('diaryForm').addEventListener('submit', async (e) => {
