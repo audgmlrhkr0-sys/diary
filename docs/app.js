@@ -19,7 +19,7 @@ const screens = {
   read: document.getElementById('readView'),
 };
 
-let supabase = null;
+let db = null;
 let currentDate = null;
 let currentPage = 0;
 let totalPages = 0;
@@ -27,15 +27,26 @@ let touchStartX = 0;
 
 function initSupabase() {
   const cfg = window.SUPABASE_CONFIG || {};
+  if (!window.supabase?.createClient) {
+    showToast('Supabase 라이브러리를 불러오지 못했습니다');
+    return null;
+  }
   if (!cfg.url || !cfg.anonKey || cfg.url.includes('YOUR_') || cfg.anonKey.includes('YOUR_')) {
     showToast('config.js에 Supabase URL과 키를 넣어주세요');
     return null;
   }
-  return window.supabase.createClient(cfg.url, cfg.anonKey);
+  try {
+    return window.supabase.createClient(cfg.url, cfg.anonKey);
+  } catch (err) {
+    console.error(err);
+    showToast('Supabase 연결에 실패했습니다');
+    return null;
+  }
 }
 
 function showScreen(name) {
   Object.keys(screens).forEach((key) => {
+    if (!screens[key]) return;
     screens[key].classList.toggle('hidden', key !== name);
   });
 }
@@ -64,9 +75,9 @@ function dateMeta(dateStr) {
 }
 
 async function saveEntry(data) {
-  if (!supabase) throw new Error('Supabase가 설정되지 않았습니다');
+  if (!db) throw new Error('Supabase가 설정되지 않았습니다');
 
-  const { data: row, error } = await supabase
+  const { data: row, error } = await db
     .from('diary_entries')
     .insert({
       date: data.date,
@@ -82,9 +93,9 @@ async function saveEntry(data) {
 }
 
 async function getAllEntries() {
-  if (!supabase) return [];
+  if (!db) return [];
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('diary_entries')
     .select('id, date, name, content, satisfaction, created_at')
     .order('date', { ascending: true })
@@ -315,4 +326,4 @@ viewport.addEventListener('touchend', (e) => {
   }
 }, { passive: true });
 
-supabase = initSupabase();
+db = initSupabase();
