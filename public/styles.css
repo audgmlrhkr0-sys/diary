@@ -22,8 +22,6 @@
 html {
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 body {
@@ -31,6 +29,13 @@ body {
   background: var(--ivory);
   color: var(--text);
   min-height: 100dvh;
+}
+
+@media (min-width: 769px) {
+  html {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .hidden { display: none !important; }
@@ -665,12 +670,12 @@ body {
 .page-back {
   position: absolute;
   inset: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   border-radius: 0 4px 4px 0;
 }
 
 .page-front {
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(0,0,0,0.05), transparent 10px),
@@ -680,25 +685,32 @@ body {
   box-shadow: inset -1px 0 0 rgba(0,0,0,0.03);
 }
 
-.page-scroll {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-  padding: 2rem 1.75rem;
-  transform: translateZ(0);
-}
-
 .page-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   background:
     linear-gradient(270deg, rgba(0,0,0,0.08), transparent 18%),
     linear-gradient(180deg, #f3eee4, #ebe4d8);
   transform: rotateY(180deg);
   box-shadow: inset 8px 0 18px rgba(0,0,0,0.08);
+}
+
+.book-viewport.is-flipping .page-front,
+.book-page.is-turning-forward .page-front,
+.book-page.is-turning-back .page-front {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.page-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  padding: 2rem 1.75rem;
 }
 
 .book-page.is-turning-forward .page-front,
@@ -856,4 +868,49 @@ body {
   border-radius: 30px;
   font-size: 0.85rem;
   z-index: 300;
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .screen:not(.hidden) {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  #readView {
+    height: 100%;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .main-center {
+    justify-content: flex-start;
+    padding-top: 2rem;
+  }
+
+  .book-area {
+    flex: none;
+    justify-content: flex-start;
+    width: 100%;
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .page-scroll {
+    touch-action: pan-y;
+  }
 }

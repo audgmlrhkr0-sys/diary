@@ -36,6 +36,7 @@ let currentPage = 0;
 let totalPages = 0;
 let touchStartX = 0;
 let touchStartY = 0;
+let touchMovedVertically = false;
 let skipBookClick = false;
 let isFlipping = false;
 const FLIP_MS = 680;
@@ -389,6 +390,9 @@ function goToPage(index, animate = true) {
   document.getElementById('btnBookPrev').disabled = currentPage === 0 || isFlipping;
   document.getElementById('btnBookNext').disabled = currentPage >= totalPages - 1 || isFlipping;
 
+  const activeScroller = document.querySelector(`#bookTrack .book-page[data-index="${currentPage}"] .page-scroll`);
+  if (activeScroller) activeScroller.scrollTop = 0;
+
   if (animate) {
     window.setTimeout(() => {
       document.getElementById('btnBookPrev').disabled = currentPage === 0;
@@ -626,19 +630,32 @@ viewport.addEventListener('click', (e) => {
 viewport.addEventListener('touchstart', (e) => {
   touchStartX = e.touches[0].clientX;
   touchStartY = e.touches[0].clientY;
+  touchMovedVertically = false;
   skipBookClick = false;
+}, { passive: true });
+
+viewport.addEventListener('touchmove', (e) => {
+  const dy = e.touches[0].clientY - touchStartY;
+  const dx = e.touches[0].clientX - touchStartX;
+  if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
+    touchMovedVertically = true;
+  }
 }, { passive: true });
 
 viewport.addEventListener('touchend', (e) => {
   const dx = e.changedTouches[0].clientX - touchStartX;
   const dy = e.changedTouches[0].clientY - touchStartY;
-  if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) + 10) {
+
+  if (touchMovedVertically || Math.abs(dy) > Math.abs(dx)) {
+    skipBookClick = true;
+    return;
+  }
+
+  if (Math.abs(dx) > 40) {
     skipBookClick = true;
     if (dx < 0) goToPage(currentPage + 1);
     else goToPage(currentPage - 1);
-    return;
   }
-  if (Math.abs(dy) > 10) skipBookClick = true;
 }, { passive: true });
 
 db = initSupabase();
