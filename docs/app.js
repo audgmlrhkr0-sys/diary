@@ -35,6 +35,8 @@ let readDate = null;
 let currentPage = 0;
 let totalPages = 0;
 let touchStartX = 0;
+let touchStartY = 0;
+let skipBookClick = false;
 let isFlipping = false;
 const FLIP_MS = 680;
 
@@ -304,7 +306,7 @@ async function loadBook(date) {
 
   const track = document.getElementById('bookTrack');
   isFlipping = false;
-  track.innerHTML = `<div class="book-page"><div class="page-empty"><p>불러오는 중…</p></div></div>`;
+  track.innerHTML = `<div class="book-page"><div class="page-front"><div class="page-scroll"><div class="page-empty"><p>불러오는 중…</p></div></div></div></div>`;
   totalPages = 1;
   currentPage = 0;
   goToPage(0, false);
@@ -332,7 +334,7 @@ async function loadBook(date) {
   currentPage = 0;
   track.innerHTML = pages.map((entry, i) =>
     `<div class="book-page" data-index="${i}">
-      <div class="page-front">${buildPageContent(entry)}</div>
+      <div class="page-front"><div class="page-scroll">${buildPageContent(entry)}</div></div>
       <div class="page-back" aria-hidden="true"></div>
     </div>`
   ).join('');
@@ -370,12 +372,15 @@ function goToPage(index, animate = true) {
   currentPage = index;
 
   if (!animate) {
+    viewport.classList.remove('is-flipping');
     syncPageLayers(null);
   } else {
     isFlipping = true;
+    viewport.classList.add('is-flipping');
     syncPageLayers(from);
     window.setTimeout(() => {
       isFlipping = false;
+      viewport.classList.remove('is-flipping');
       syncPageLayers(null);
     }, FLIP_MS);
   }
@@ -604,6 +609,14 @@ document.getElementById('btnBookNext').addEventListener('click', (e) => {
 
 const viewport = document.getElementById('bookViewport');
 viewport.addEventListener('click', (e) => {
+  if (skipBookClick) {
+    skipBookClick = false;
+    return;
+  }
+  const scroller = e.target.closest('.page-scroll');
+  if (scroller && scroller.scrollHeight > scroller.clientHeight + 4) {
+    return;
+  }
   const rect = viewport.getBoundingClientRect();
   const x = e.clientX - rect.left;
   if (x > rect.width * 0.55) goToPage(currentPage + 1);
@@ -612,14 +625,20 @@ viewport.addEventListener('click', (e) => {
 
 viewport.addEventListener('touchstart', (e) => {
   touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  skipBookClick = false;
 }, { passive: true });
 
 viewport.addEventListener('touchend', (e) => {
   const dx = e.changedTouches[0].clientX - touchStartX;
-  if (Math.abs(dx) > 40) {
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) + 10) {
+    skipBookClick = true;
     if (dx < 0) goToPage(currentPage + 1);
     else goToPage(currentPage - 1);
+    return;
   }
+  if (Math.abs(dy) > 10) skipBookClick = true;
 }, { passive: true });
 
 db = initSupabase();
