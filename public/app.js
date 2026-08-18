@@ -269,7 +269,7 @@ function buildPageContent(entry) {
       <div class="page-cover-top">
         <p class="page-cover-eyebrow">전시연계프로그램</p>
         <p class="page-cover-program">&lt;ON AIR: 규칙을 찾아라!&gt;</p>
-        <p class="page-cover-title">감상평 다이어리</p>
+        <p class="page-cover-title">참여자 관찰 일지</p>
       </div>
       ${entry.coverImage ? `
         <div class="page-cover-media">
