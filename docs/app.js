@@ -40,6 +40,11 @@ let touchMovedVertically = false;
 let skipBookClick = false;
 let isFlipping = false;
 const FLIP_MS = 680;
+let passwordMode = 'write';
+
+function isMobileReader() {
+  return window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)').matches;
+}
 
 function initSupabase() {
   const cfg = window.SUPABASE_CONFIG || {};
@@ -194,14 +199,31 @@ async function deleteEntries(ids) {
   if (error) throw error;
 }
 
+function openPasswordScreen(mode) {
+  passwordMode = mode;
+  document.getElementById('passwordViewTitle').textContent = mode === 'write' ? '일기 쓰기' : '일기 읽기';
+  document.getElementById('passwordViewDesc').textContent = mode === 'write'
+    ? '작성하려면 비밀번호를 입력해 주세요'
+    : '읽으려면 비밀번호를 입력해 주세요';
+  document.getElementById('passwordForm').reset();
+  showScreen('password');
+  setTimeout(() => document.getElementById('inputPassword').focus(), 100);
+}
+
 function openWriteGate() {
   if (sessionStorage.getItem(WRITE_AUTH_KEY) === '1') {
     openDateSelect();
     return;
   }
-  document.getElementById('passwordForm').reset();
-  showScreen('password');
-  setTimeout(() => document.getElementById('inputPassword').focus(), 100);
+  openPasswordScreen('write');
+}
+
+function openReadGate() {
+  if (sessionStorage.getItem(WRITE_AUTH_KEY) === '1') {
+    openBookSelect();
+    return;
+  }
+  openPasswordScreen('read');
 }
 
 function openAdminGate() {
@@ -347,6 +369,7 @@ function syncPageLayers(animateFrom) {
   pages.forEach((page, i) => {
     const flipped = i < currentPage;
     page.classList.toggle('is-flipped', flipped);
+    page.classList.toggle('is-current', i === currentPage);
     page.classList.remove('is-turning-forward', 'is-turning-back');
 
     if (animateFrom != null) {
@@ -367,21 +390,24 @@ function syncPageLayers(animateFrom) {
 
 function goToPage(index, animate = true) {
   if (index < 0 || index >= totalPages) return;
+  if (isMobileReader()) animate = false;
   if (animate && (isFlipping || index === currentPage)) return;
 
   const from = currentPage;
   currentPage = index;
 
+  const bookViewport = document.getElementById('bookViewport');
+
   if (!animate) {
-    viewport.classList.remove('is-flipping');
+    bookViewport.classList.remove('is-flipping');
     syncPageLayers(null);
   } else {
     isFlipping = true;
-    viewport.classList.add('is-flipping');
+    bookViewport.classList.add('is-flipping');
     syncPageLayers(from);
     window.setTimeout(() => {
       isFlipping = false;
-      viewport.classList.remove('is-flipping');
+      bookViewport.classList.remove('is-flipping');
       syncPageLayers(null);
     }, FLIP_MS);
   }
@@ -402,6 +428,11 @@ function goToPage(index, animate = true) {
 }
 
 async function openBookSelect() {
+  if (sessionStorage.getItem(WRITE_AUTH_KEY) !== '1') {
+    openReadGate();
+    return;
+  }
+
   const shelf = document.getElementById('bookShelf');
   shelf.innerHTML = `<p class="shelf-loading">불러오는 중…</p>`;
   showScreen('bookSelect');
@@ -501,7 +532,7 @@ async function openAdmin() {
 }
 
 document.getElementById('btnWrite').addEventListener('click', openWriteGate);
-document.getElementById('btnRead').addEventListener('click', openBookSelect);
+document.getElementById('btnRead').addEventListener('click', openReadGate);
 document.getElementById('btnAdmin').addEventListener('click', openAdminGate);
 document.getElementById('btnBackPassword').addEventListener('click', () => showScreen('main'));
 document.getElementById('btnBackAdminPassword').addEventListener('click', () => showScreen('main'));
@@ -521,7 +552,8 @@ document.getElementById('passwordForm').addEventListener('submit', (e) => {
     return;
   }
   sessionStorage.setItem(WRITE_AUTH_KEY, '1');
-  openDateSelect();
+  if (passwordMode === 'write') openDateSelect();
+  else openBookSelect();
 });
 
 document.getElementById('adminPasswordForm').addEventListener('submit', (e) => {
@@ -612,51 +644,54 @@ document.getElementById('btnBookNext').addEventListener('click', (e) => {
 });
 
 const viewport = document.getElementById('bookViewport');
-viewport.addEventListener('click', (e) => {
-  if (skipBookClick) {
+
+if (!isMobileReader()) {
+  viewport.addEventListener('click', (e) => {
+    if (skipBookClick) {
+      skipBookClick = false;
+      return;
+    }
+    const scroller = e.target.closest('.page-scroll');
+    if (scroller && scroller.scrollHeight > scroller.clientHeight + 4) {
+      return;
+    }
+    const rect = viewport.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if (x > rect.width * 0.55) goToPage(currentPage + 1);
+    else if (x < rect.width * 0.45) goToPage(currentPage - 1);
+  });
+
+  viewport.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchMovedVertically = false;
     skipBookClick = false;
-    return;
-  }
-  const scroller = e.target.closest('.page-scroll');
-  if (scroller && scroller.scrollHeight > scroller.clientHeight + 4) {
-    return;
-  }
-  const rect = viewport.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  if (x > rect.width * 0.55) goToPage(currentPage + 1);
-  else if (x < rect.width * 0.45) goToPage(currentPage - 1);
-});
+  }, { passive: true });
 
-viewport.addEventListener('touchstart', (e) => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-  touchMovedVertically = false;
-  skipBookClick = false;
-}, { passive: true });
+  viewport.addEventListener('touchmove', (e) => {
+    const dy = e.touches[0].clientY - touchStartY;
+    const dx = e.touches[0].clientX - touchStartX;
+    if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
+      touchMovedVertically = true;
+    }
+  }, { passive: true });
 
-viewport.addEventListener('touchmove', (e) => {
-  const dy = e.touches[0].clientY - touchStartY;
-  const dx = e.touches[0].clientX - touchStartX;
-  if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
-    touchMovedVertically = true;
-  }
-}, { passive: true });
+  viewport.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
 
-viewport.addEventListener('touchend', (e) => {
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
+    if (touchMovedVertically || Math.abs(dy) > Math.abs(dx)) {
+      skipBookClick = true;
+      return;
+    }
 
-  if (touchMovedVertically || Math.abs(dy) > Math.abs(dx)) {
-    skipBookClick = true;
-    return;
-  }
-
-  if (Math.abs(dx) > 40) {
-    skipBookClick = true;
-    if (dx < 0) goToPage(currentPage + 1);
-    else goToPage(currentPage - 1);
-  }
-}, { passive: true });
+    if (Math.abs(dx) > 40) {
+      skipBookClick = true;
+      if (dx < 0) goToPage(currentPage + 1);
+      else goToPage(currentPage - 1);
+    }
+  }, { passive: true });
+}
 
 db = initSupabase();
 showScreen('main');

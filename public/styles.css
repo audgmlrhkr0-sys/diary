@@ -891,11 +891,15 @@ body {
   }
 
   #readView {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     height: 100%;
     max-height: none;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+  }
+
+  #readView .sub-header {
+    flex-shrink: 0;
   }
 
   .main-center {
@@ -904,13 +908,95 @@ body {
   }
 
   .book-area {
-    flex: none;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     justify-content: flex-start;
     width: 100%;
-    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+    padding: 0.75rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .book-wrapper {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .book {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .book-shadow,
+  .book-spine {
+    display: none;
+  }
+
+  .book-viewport {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+    border-radius: 10px;
+  }
+
+  .book-track {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    position: relative;
+  }
+
+  .book-page {
+    transition: none;
+    transform: none !important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .book-page.is-current {
+    visibility: visible;
+    pointer-events: auto;
+    z-index: 1 !important;
+  }
+
+  .book-page.is-flipped,
+  .book-page.is-turning-forward,
+  .book-page.is-turning-back {
+    transform: none !important;
+    transform-style: flat;
+  }
+
+  .page-front {
+    backface-visibility: visible;
+    -webkit-backface-visibility: visible;
+  }
+
+  .page-back {
+    display: none;
   }
 
   .page-scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
     touch-action: pan-y;
+  }
+
+  .book-controls {
+    flex-shrink: 0;
+    margin-top: 0.85rem;
   }
 }
