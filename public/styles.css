@@ -534,35 +534,37 @@ body {
 .field input:focus,
 .field textarea:focus { border-bottom-color: var(--accent); }
 
-.emoji-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.45rem;
-}
-
-.emoji-btn {
+.rating-row {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  width: 100%;
-  font-size: 1.45rem;
-  background: var(--ivory);
-  border: 2px solid transparent;
-  border-radius: 10px;
-  padding: 0.55rem 0.25rem 0.45rem;
-  cursor: pointer;
-  font-family: inherit;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
-.emoji-btn.selected { border-color: var(--accent); background: var(--ivory-dark); }
-.emoji-icon { line-height: 1; }
-.emoji-caption {
-  font-size: 0.62rem;
+.rating-btn {
+  border: none;
+  background: transparent;
+  color: #c9c1b6;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem;
+  font-family: inherit;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.rating-btn.selected {
+  color: #e0b341;
+}
+
+.rating-btn:active {
+  transform: scale(0.96);
+}
+
+.rating-help {
+  font-size: 0.72rem;
   color: var(--text-sub);
-  font-weight: 400;
-  white-space: nowrap;
+  line-height: 1.45;
 }
 
 .btn-primary {
@@ -817,7 +819,7 @@ body {
 }
 .page-date-tag { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 1.25rem; }
 .page-author { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
-.page-emoji { font-size: 1.6rem; margin-bottom: 1rem; }
+.page-emoji { font-size: 1.35rem; margin-bottom: 1rem; color: #e0b341; letter-spacing: 0.08em; }
 .page-body { font-size: 0.95rem; line-height: 1.85; white-space: pre-wrap; word-break: break-word; }
 
 .page-empty {

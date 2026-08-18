@@ -103,37 +103,19 @@
         <input type="text" id="inputName" placeholder="예) 홍길동" maxlength="20" required>
       </label>
       <label class="field">
-        <span class="field-label">참여 소감</span>
-        <textarea id="inputContent" placeholder="오늘의 참여 소감을 적어주세요" rows="8" maxlength="500" required></textarea>
+        <span class="field-label">관찰일지</span>
+        <textarea id="inputContent" placeholder="당신이 관찰한 내용을 공유해 주세요!" rows="8" maxlength="500" required></textarea>
       </label>
       <div class="field">
-        <span class="field-label">나의 표정</span>
-        <div class="emoji-row">
-          <button type="button" class="emoji-btn" data-emoji="😢">
-            <span class="emoji-icon">😢</span>
-            <span class="emoji-caption">눈물</span>
-          </button>
-          <button type="button" class="emoji-btn" data-emoji="😐">
-            <span class="emoji-icon">😐</span>
-            <span class="emoji-caption">무표정</span>
-          </button>
-          <button type="button" class="emoji-btn" data-emoji="🙂">
-            <span class="emoji-icon">🙂</span>
-            <span class="emoji-caption">웃음</span>
-          </button>
-          <button type="button" class="emoji-btn" data-emoji="😄">
-            <span class="emoji-icon">😄</span>
-            <span class="emoji-caption">활짝웃음</span>
-          </button>
-          <button type="button" class="emoji-btn" data-emoji="🤩">
-            <span class="emoji-icon">🤩</span>
-            <span class="emoji-caption">신나는</span>
-          </button>
-          <button type="button" class="emoji-btn" data-emoji="🔥">
-            <span class="emoji-icon">🔥</span>
-            <span class="emoji-caption">불</span>
-          </button>
+        <span class="field-label">팀 분위기</span>
+        <div class="rating-row" aria-label="팀 분위기 별점">
+          <button type="button" class="rating-btn" data-rating="1" aria-label="1점">★</button>
+          <button type="button" class="rating-btn" data-rating="2" aria-label="2점">★</button>
+          <button type="button" class="rating-btn" data-rating="3" aria-label="3점">★</button>
+          <button type="button" class="rating-btn" data-rating="4" aria-label="4점">★</button>
+          <button type="button" class="rating-btn" data-rating="5" aria-label="5점">★</button>
         </div>
+        <p class="rating-help">별이 적을수록 분위기가 낮고, 많을수록 높습니다.</p>
         <input type="hidden" id="inputSatisfaction">
       </div>
       <button type="submit" class="btn-primary" id="btnSubmit">제출하기</button>

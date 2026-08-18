@@ -272,6 +272,13 @@ function autoResizeTextarea(el) {
   el.style.height = `${el.scrollHeight}px`;
 }
 
+function renderMoodStars(value) {
+  const count = Number(value);
+  if (!Number.isFinite(count) || count < 1) return escapeHtml(String(value || ''));
+  const safeCount = Math.max(1, Math.min(5, count));
+  return '★'.repeat(safeCount) + '☆'.repeat(5 - safeCount);
+}
+
 function openWrite(date, info) {
   currentDate = date;
   document.getElementById('writeDateLabel').textContent = formatDateLabel(info);
@@ -279,7 +286,7 @@ function openWrite(date, info) {
   const form = document.getElementById('diaryForm');
   form.reset();
   document.getElementById('inputSatisfaction').value = '';
-  document.querySelectorAll('.emoji-btn').forEach((b) => b.classList.remove('selected'));
+  document.querySelectorAll('.rating-btn').forEach((b) => b.classList.remove('selected'));
 
   const contentInput = document.getElementById('inputContent');
   autoResizeTextarea(contentInput);
@@ -318,7 +325,7 @@ function buildPageContent(entry) {
   }
   return `<div class="page-date-tag">${escapeHtml(entry.dateLabel)} · ${entry.day}요일</div>
     <div class="page-author">${escapeHtml(entry.name)}</div>
-    <div class="page-emoji">${entry.satisfaction}</div>
+    <div class="page-emoji">${renderMoodStars(entry.satisfaction)}</div>
     <div class="page-body">${escapeHtml(entry.content)}</div>`;
 }
 
@@ -509,7 +516,7 @@ async function openAdmin() {
         <input type="checkbox" value="${e.id}">
         <span class="admin-item-body">
           <span class="admin-item-top">
-            <span class="admin-item-name">${escapeHtml(e.name)} ${e.satisfaction}</span>
+            <span class="admin-item-name">${escapeHtml(e.name)} ${renderMoodStars(e.satisfaction)}</span>
             <span class="admin-item-date">${escapeHtml(e.dateLabel)}</span>
           </span>
           <span class="admin-item-content">${escapeHtml(e.content)}</span>
@@ -595,11 +602,13 @@ document.getElementById('btnAdminDelete').addEventListener('click', async () => 
   }
 });
 
-document.querySelectorAll('.emoji-btn').forEach((btn) => {
+document.querySelectorAll('.rating-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.emoji-btn').forEach((b) => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    document.getElementById('inputSatisfaction').value = btn.dataset.emoji;
+    const rating = Number(btn.dataset.rating);
+    document.querySelectorAll('.rating-btn').forEach((star) => {
+      star.classList.toggle('selected', Number(star.dataset.rating) <= rating);
+    });
+    document.getElementById('inputSatisfaction').value = String(rating);
   });
 });
 
