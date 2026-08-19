@@ -201,7 +201,7 @@ async function deleteEntries(ids) {
 
 function openPasswordScreen(mode) {
   passwordMode = mode;
-  document.getElementById('passwordViewTitle').textContent = mode === 'write' ? '일기 쓰기' : '일기 읽기';
+  document.getElementById('passwordViewTitle').textContent = mode === 'write' ? '일지 쓰기' : '일지 읽기';
   document.getElementById('passwordViewDesc').textContent = mode === 'write'
     ? '작성하려면 비밀번호를 입력해 주세요'
     : '읽으려면 비밀번호를 입력해 주세요';
@@ -314,7 +314,7 @@ function buildPageContent(entry) {
   if (entry.type === 'empty') {
     return `<div class="page-empty">
       <div class="page-empty-icon">📖</div>
-      <p>아직 작성된 일기가 없어요<br>일기 쓰기에서 남겨보세요</p>
+      <p>아직 작성된 일기가 없어요<br>일지 쓰기에서 남겨보세요</p>
     </div>`;
   }
   if (entry.type === 'error') {
